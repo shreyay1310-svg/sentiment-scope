@@ -14,7 +14,15 @@ services:
         generateValue: true
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "10080"
-      - key: MONGODB_URI
+      - key: DB_HOST
         sync: false
-      - key: DATABASE_NAME
+      - key: DB_PORT
+        value: "3306"
+      - key: DB_NAME
         value: sentiment_scope_db
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSL
+        value: "true"

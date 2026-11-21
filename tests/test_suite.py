@@ -5,8 +5,7 @@ import pandas as pd
 # Path configuration
 sys.path.append(str(Path(__file__).resolve().parent.parent / "backend"))
 
-from database import db
-from auth import seed_default_users
+from database import db, check_mysql_connection
 from routes.auth_routes import login, LoginRequest
 from routes.sentiment_routes import analyze_text_endpoint, TextAnalysisRequest
 from routes.dashboard_routes import get_dashboard_summary

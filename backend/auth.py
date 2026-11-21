@@ -5,7 +5,6 @@ from typing import Optional, Dict, Any
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from config import settings
-from database import db
 
 security = HTTPBearer(auto_error=False)
 
@@ -36,6 +35,7 @@ def decode_access_token(token: str) -> Optional[dict]:
         return None
 
 def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Dict[str, Any]:
+    from database import db
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -77,51 +77,3 @@ def require_super_admin(current_user: Dict[str, Any] = Depends(get_current_user)
         )
     return current_user
 
-# Pre-seed default users if database is fresh
-def seed_default_users():
-    default_users = [
-        {
-            "id": "usr_shreya_primary",
-            "email": "shreya@sentimentscope.com",
-            "name": "Shreya Yadav",
-            "password": "Password123!",
-            "role": "Super Admin",
-            "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256",
-            "plan": "Pro Plan"
-        },
-        {
-            "id": "usr_demo_admin",
-            "email": "admin@sentimentscope.com",
-            "name": "Alex Vance (Admin)",
-            "password": "AdminPassword123!",
-            "role": "Admin",
-            "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=256",
-            "plan": "Enterprise"
-        },
-        {
-            "id": "usr_demo_user",
-            "email": "user@sentimentscope.com",
-            "name": "Demo Analyst",
-            "password": "UserPassword123!",
-            "role": "User",
-            "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=256",
-            "plan": "Starter Plan"
-        }
-    ]
-
-    for u in default_users:
-        existing = db.get_user_by_email(u["email"])
-        if not existing:
-            pwd_hash = hash_password(u["password"])
-            db.create_user({
-                "id": u["id"],
-                "email": u["email"],
-                "name": u["name"],
-                "password_hash": pwd_hash,
-                "role": u["role"],
-                "avatar": u["avatar"],
-                "is_verified": 1,
-                "created_at": datetime.datetime.now().isoformat()
-            })
-
-seed_default_users()

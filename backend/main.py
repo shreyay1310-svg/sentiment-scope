@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from config import settings
 from routes.auth_routes import router as auth_router
 from routes.sentiment_routes import router as sentiment_router
@@ -55,9 +55,11 @@ if DIST_DIR.exists() and (DIST_DIR / "index.html").exists():
     if (DIST_DIR / "assets").exists():
         app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="static_assets")
 
+    _index_html_content = (DIST_DIR / "index.html").read_text(encoding="utf-8")
+
     @app.get("/")
     async def serve_index():
-        return FileResponse(DIST_DIR / "index.html")
+        return HTMLResponse(content=_index_html_content)
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
@@ -66,7 +68,7 @@ if DIST_DIR.exists() and (DIST_DIR / "index.html").exists():
         file_candidate = DIST_DIR / full_path
         if file_candidate.is_file():
             return FileResponse(file_candidate)
-        return FileResponse(DIST_DIR / "index.html")
+        return HTMLResponse(content=_index_html_content)
 else:
     @app.get("/")
     def root():

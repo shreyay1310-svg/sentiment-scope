@@ -34,8 +34,13 @@ if settings.MONGODB_URI:
 # SQLite persistent document store fallback
 SQLITE_DB_PATH = settings.STORAGE_DIR / "sentiment_scope.db"
 
+def get_sqlite_conn():
+    conn = sqlite3.connect(SQLITE_DB_PATH, timeout=30.0)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    return conn
+
 def init_sqlite():
-    conn = sqlite3.connect(SQLITE_DB_PATH)
+    conn = get_sqlite_conn()
     cursor = conn.cursor()
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
@@ -112,7 +117,7 @@ class DatabaseAdapter:
                 user["id"] = str(user.get("_id", user.get("id")))
             return user
         
-        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn = get_sqlite_conn()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (email,))
@@ -124,7 +129,7 @@ class DatabaseAdapter:
         if self.use_mongo:
             user = self.mongo_db.users.find_one({"id": user_id})
             return user
-        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn = get_sqlite_conn()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
@@ -142,10 +147,10 @@ class DatabaseAdapter:
             self.mongo_db.users.insert_one(user_data.copy())
             return user_data
 
-        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn = get_sqlite_conn()
         cursor = conn.cursor()
         cursor.execute("""
-        INSERT INTO users (id, email, name, password_hash, role, avatar, is_verified, created_at)
+        INSERT OR REPLACE INTO users (id, email, name, password_hash, role, avatar, is_verified, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             user_data["id"],
@@ -165,7 +170,7 @@ class DatabaseAdapter:
         if self.use_mongo:
             self.mongo_db.users.update_one({"id": user_id}, {"$set": {"password_hash": new_hash}})
             return
-        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn = get_sqlite_conn()
         cursor = conn.cursor()
         cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (new_hash, user_id))
         conn.commit()
@@ -175,7 +180,7 @@ class DatabaseAdapter:
         if self.use_mongo:
             self.mongo_db.users.update_one({"id": user_id}, {"$set": updates})
             return
-        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn = get_sqlite_conn()
         cursor = conn.cursor()
         set_clauses = []
         vals = []
@@ -189,7 +194,7 @@ class DatabaseAdapter:
 
     # --- ANALYSES METHODS ---
     def insert_analysis(self, record: Dict[str, Any]) -> Dict[str, Any]:
-        if "id" not in record:
+        if "id" not in record or not record["id"]:
             record["id"] = f"ANL-{uuid.uuid4().hex[:8].upper()}"
         if "created_at" not in record:
             record["created_at"] = datetime.datetime.now().isoformat()
@@ -199,10 +204,10 @@ class DatabaseAdapter:
             self.mongo_db.analyses.insert_one(doc)
             return record
 
-        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn = get_sqlite_conn()
         cursor = conn.cursor()
         cursor.execute("""
-        INSERT INTO analyses (id, user_id, input_type, source_name, text, sentiment, confidence, score, emotions, keywords, explanation, classification_details, created_at)
+        INSERT OR REPLACE INTO analyses (id, user_id, input_type, source_name, text, sentiment, confidence, score, emotions, keywords, explanation, classification_details, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             record["id"],
@@ -243,7 +248,7 @@ class DatabaseAdapter:
                 items.append(item)
             return {"items": items, "total": total}
 
-        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn = get_sqlite_conn()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
@@ -299,7 +304,7 @@ class DatabaseAdapter:
                 item["_id"] = str(item.get("_id", ""))
             return item
         
-        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn = get_sqlite_conn()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         if is_admin:
@@ -324,7 +329,7 @@ class DatabaseAdapter:
             res = self.mongo_db.analyses.delete_one(query)
             return res.deleted_count > 0
 
-        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn = get_sqlite_conn()
         cursor = conn.cursor()
         if is_admin:
             cursor.execute("DELETE FROM analyses WHERE id = ?", (analysis_id,))
@@ -346,10 +351,10 @@ class DatabaseAdapter:
             self.mongo_db.datasets.insert_one(dataset.copy())
             return dataset
 
-        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn = get_sqlite_conn()
         cursor = conn.cursor()
         cursor.execute("""
-        INSERT INTO datasets (id, user_id, file_name, file_type, row_count, positive_count, negative_count, neutral_count, file_path, analyzed_file_path, created_at)
+        INSERT OR REPLACE INTO datasets (id, user_id, file_name, file_type, row_count, positive_count, negative_count, neutral_count, file_path, analyzed_file_path, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             dataset["id"],
@@ -378,7 +383,7 @@ class DatabaseAdapter:
                 items.append(item)
             return items
 
-        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn = get_sqlite_conn()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         if is_admin:
@@ -400,7 +405,7 @@ class DatabaseAdapter:
             self.mongo_db.live_feed.insert_one(item.copy())
             return item
 
-        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn = get_sqlite_conn()
         cursor = conn.cursor()
         cursor.execute("""
         INSERT INTO live_feed (id, user_id, text, sentiment, confidence, source, created_at)
@@ -427,7 +432,7 @@ class DatabaseAdapter:
                 items.append(item)
             return items
 
-        conn = sqlite3.connect(SQLITE_DB_PATH)
+        conn = get_sqlite_conn()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM live_feed ORDER BY created_at DESC LIMIT ?", (limit,))

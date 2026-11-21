@@ -3,6 +3,8 @@ from auth import get_current_user
 from database import db
 import datetime
 
+import uuid
+
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 @router.get("/summary")
@@ -19,10 +21,10 @@ def get_dashboard_summary(current_user: dict = Depends(get_current_user)):
     total_datasets = len(datasets)
 
     if total_analyses == 0:
-        # Pre-seed realistic seed analyses if user just registered or empty so dashboard renders beautifully like reference image
+        # Pre-seed realistic seed analyses with unique IDs per user
         seed_analyses = [
             {
-                "id": "ANL-78A12B",
+                "id": f"ANL-{uuid.uuid4().hex[:8].upper()}",
                 "user_id": user_id,
                 "input_type": "file",
                 "source_name": "Product review.txt",
@@ -37,7 +39,7 @@ def get_dashboard_summary(current_user: dict = Depends(get_current_user)):
                 "created_at": (datetime.datetime.now() - datetime.timedelta(hours=2)).strftime("%Y-%m-%d %I:%M %p")
             },
             {
-                "id": "ANL-94C38D",
+                "id": f"ANL-{uuid.uuid4().hex[:8].upper()}",
                 "user_id": user_id,
                 "input_type": "file",
                 "source_name": "Customer feedback.csv",
@@ -52,7 +54,7 @@ def get_dashboard_summary(current_user: dict = Depends(get_current_user)):
                 "created_at": (datetime.datetime.now() - datetime.timedelta(hours=4)).strftime("%Y-%m-%d %I:%M %p")
             },
             {
-                "id": "ANL-55F89E",
+                "id": f"ANL-{uuid.uuid4().hex[:8].upper()}",
                 "user_id": user_id,
                 "input_type": "text",
                 "source_name": "Social media comments",

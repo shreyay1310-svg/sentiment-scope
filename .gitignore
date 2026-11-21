@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Python Cache & Envs
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.env
+.env.local
+.env.production
+venv/
+env/
+.venv/
+
+# Build Outputs
+dist/
+build/
+.output/
+
+# Logs & Storage
+*.log
+npm-debug.log*
+yarn-debug.log*
+backend/data/*.db
+backend/data/*.db-journal
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/reports/*
+!backend/reports/.gitkeep
+
+# Testing & Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel

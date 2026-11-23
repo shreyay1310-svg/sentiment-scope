@@ -49,12 +49,12 @@ export const AuthProvider = ({ children }) => {
           setUser(userData);
           localStorage.setItem('sentiment_scope_user', JSON.stringify(userData));
         } catch {
-          // If token failed, attempt quick login default
-          await quickLoginDefault();
+          // If stored token is invalid or expired, clear local storage
+          localStorage.removeItem('sentiment_scope_token');
+          localStorage.removeItem('sentiment_scope_user');
+          setToken(null);
+          setUser(null);
         }
-      } else {
-        // Auto-login default user (Shreya Super Admin) for initial evaluation if no user logged in
-        await quickLoginDefault();
       }
       setLoading(false);
     };

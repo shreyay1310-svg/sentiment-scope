@@ -153,19 +153,29 @@ export const AuthPages = ({ initialMode = 'login' }) => {
     }
   };
 
+  const [quickLoadingRole, setQuickLoadingRole] = useState(null);
+
   // One-Click Quick Evaluation Logins
-  const handleQuickLogin = async (userEmail, userPassword) => {
+  const handleQuickLogin = async (userEmail, userPassword, roleKey) => {
     setEmail(userEmail);
     setPassword(userPassword);
     setError('');
+    setQuickLoadingRole(roleKey);
     setLoading(true);
     try {
       const result = await login(userEmail, userPassword);
-      navigate(result.redirectRoute || '/user/dashboard');
+      const targetRoute = result.redirectRoute || (
+        roleKey === 'shreya' ? '/super-admin/dashboard' :
+        roleKey === 'alex' ? '/admin/dashboard' : '/user/dashboard'
+      );
+      navigate(targetRoute);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Quick login failed.');
+      console.error('Quick login error:', err);
+      const message = err.response?.data?.detail || err.message || 'Quick login failed. Please check network connection.';
+      setError(message);
     } finally {
       setLoading(false);
+      setQuickLoadingRole(null);
     }
   };
 
@@ -275,29 +285,56 @@ export const AuthPages = ({ initialMode = 'login' }) => {
               <div className="grid grid-cols-3 gap-2.5">
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin('shreya@sentimentscope.com', 'Password123!')}
-                  className="p-2.5 rounded-xl bg-[#FAF5FF] hover:bg-purple-100/70 border border-purple-200 text-center transition-all cursor-pointer active:scale-[0.98]"
+                  disabled={loading}
+                  onClick={() => handleQuickLogin('admin@sentimentscope.com', 'Password123!', 'shreya')}
+                  className="p-2.5 rounded-xl bg-[#FAF5FF] hover:bg-purple-100/70 border border-purple-200 text-center transition-all cursor-pointer active:scale-[0.98] disabled:opacity-60 relative"
                 >
-                  <p className="text-xs font-bold text-purple-900">Shreya</p>
-                  <p className="text-[10px] text-purple-600 font-semibold mt-0.5">Super Admin</p>
+                  {quickLoadingRole === 'shreya' ? (
+                    <div className="py-1 flex items-center justify-center">
+                      <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-xs font-bold text-purple-900">Shreya</p>
+                      <p className="text-[10px] text-purple-600 font-semibold mt-0.5">Super Admin</p>
+                    </>
+                  )}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin('admin@sentimentscope.com', 'AdminPassword123!')}
-                  className="p-2.5 rounded-xl bg-[#F8FAFC] hover:bg-slate-100 border border-slate-200 text-center transition-all cursor-pointer active:scale-[0.98]"
+                  disabled={loading}
+                  onClick={() => handleQuickLogin('alex@sentimentscope.com', 'AdminPassword123!', 'alex')}
+                  className="p-2.5 rounded-xl bg-[#F8FAFC] hover:bg-slate-100 border border-slate-200 text-center transition-all cursor-pointer active:scale-[0.98] disabled:opacity-60 relative"
                 >
-                  <p className="text-xs font-bold text-slate-800">Alex Vance</p>
-                  <p className="text-[10px] text-slate-500 font-semibold mt-0.5">Admin</p>
+                  {quickLoadingRole === 'alex' ? (
+                    <div className="py-1 flex items-center justify-center">
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-600" />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-xs font-bold text-slate-800">Alex Vance</p>
+                      <p className="text-[10px] text-slate-500 font-semibold mt-0.5">Admin</p>
+                    </>
+                  )}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin('user@sentimentscope.com', 'UserPassword123!')}
-                  className="p-2.5 rounded-xl bg-[#F8FAFC] hover:bg-slate-100 border border-slate-200 text-center transition-all cursor-pointer active:scale-[0.98]"
+                  disabled={loading}
+                  onClick={() => handleQuickLogin('demo@sentimentscope.com', 'UserPassword123!', 'demo')}
+                  className="p-2.5 rounded-xl bg-[#F8FAFC] hover:bg-slate-100 border border-slate-200 text-center transition-all cursor-pointer active:scale-[0.98] disabled:opacity-60 relative"
                 >
-                  <p className="text-xs font-bold text-slate-800">Demo User</p>
-                  <p className="text-[10px] text-slate-500 font-semibold mt-0.5">Standard</p>
+                  {quickLoadingRole === 'demo' ? (
+                    <div className="py-1 flex items-center justify-center">
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-600" />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-xs font-bold text-slate-800">Demo User</p>
+                      <p className="text-[10px] text-slate-500 font-semibold mt-0.5">Standard</p>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

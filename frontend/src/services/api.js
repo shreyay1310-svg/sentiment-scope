@@ -1,12 +1,24 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL 
-  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`
-  : '/api';
+const getApiBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`;
+  }
+  // When running on Vercel production domains, connect directly to backend API
+  if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
+    return 'https://backend-sentimentscope.vercel.app/api';
+  }
+  return '/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
 api.interceptors.request.use(

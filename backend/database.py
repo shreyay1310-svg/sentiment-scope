@@ -148,95 +148,105 @@ def seed_roles_and_default_users():
 
         # Seed default user Shreya Yadav if not existing
         from auth import hash_password
-        default_shreya = session.query(User).filter_by(email="shreya@sentimentscope.com").first()
-        if not default_shreya:
-            user_id = "usr_shreya_primary"
-            new_user = User(
-                id=user_id,
-                email="shreya@sentimentscope.com",
-                name="Shreya Yadav",
-                phone="+1 (555) 234-5678",
-                status="active",
-                password_hash=hash_password("Password123!"),
-                avatar="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256",
-                is_verified=True
-            )
-            session.add(new_user)
-            session.commit()
 
-            # Attach Super Admin role
-            user_role = UserRole(
-                id=f"ur_{uuid.uuid4().hex[:8]}",
-                user_id=user_id,
-                role_id=role_map["Super Admin"]
-            )
-            session.add(user_role)
+        # Accounts to seed / ensure exist with exact roles and secure hashes
+        accounts_to_seed = [
+            {
+                "email": "admin@sentimentscope.com",
+                "name": "Shreya",
+                "role": "Super Admin",
+                "password": "Password123!",
+                "phone": "+1 (555) 234-5678",
+                "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256"
+            },
+            {
+                "email": "shreya@sentimentscope.com",
+                "name": "Shreya Yadav",
+                "role": "Super Admin",
+                "password": "Password123!",
+                "phone": "+1 (555) 234-5678",
+                "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256"
+            },
+            {
+                "email": "alex@sentimentscope.com",
+                "name": "Alex Vance",
+                "role": "Admin",
+                "password": "AdminPassword123!",
+                "phone": "+1 (555) 876-5432",
+                "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=256"
+            },
+            {
+                "email": "demo@sentimentscope.com",
+                "name": "Demo User",
+                "role": "User",
+                "password": "UserPassword123!",
+                "phone": "+1 (555) 345-6789",
+                "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=256"
+            },
+            {
+                "email": "user@sentimentscope.com",
+                "name": "Demo Analyst",
+                "role": "User",
+                "password": "UserPassword123!",
+                "phone": "+1 (555) 345-6789",
+                "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=256"
+            }
+        ]
 
-            # Initialize settings
-            settings_obj = UserSetting(
-                id=f"set_{uuid.uuid4().hex[:8]}",
-                user_id=user_id,
-                email_alerts=True,
-                weekly_digest=True,
-                high_negative_spike_alert=True
-            )
-            session.add(settings_obj)
-            session.commit()
-        else:
-            if not default_shreya.phone:
-                default_shreya.phone = "+1 (555) 234-5678"
-                default_shreya.status = "active"
+        for acc in accounts_to_seed:
+            target_role_id = role_map.get(acc["role"])
+            existing_user = session.query(User).filter(func.lower(User.email) == acc["email"].lower()).first()
+            if not existing_user:
+                new_uid = f"usr_{uuid.uuid4().hex[:12]}"
+                new_u = User(
+                    id=new_uid,
+                    email=acc["email"],
+                    name=acc["name"],
+                    phone=acc["phone"],
+                    status="active",
+                    password_hash=hash_password(acc["password"]),
+                    avatar=acc["avatar"],
+                    is_verified=True
+                )
+                session.add(new_u)
                 session.commit()
 
-        # Seed Admin user
-        admin_user = session.query(User).filter_by(email="admin@sentimentscope.com").first()
-        if not admin_user:
-            admin_id = "usr_admin_alex"
-            new_admin = User(
-                id=admin_id,
-                email="admin@sentimentscope.com",
-                name="Alex Vance (Admin)",
-                phone="+1 (555) 876-5432",
-                status="active",
-                password_hash=hash_password("AdminPassword123!"),
-                avatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=256",
-                is_verified=True
-            )
-            session.add(new_admin)
-            session.commit()
-            session.add(UserRole(id=f"ur_{uuid.uuid4().hex[:8]}", user_id=admin_id, role_id=role_map["Admin"]))
-            session.add(UserSetting(id=f"set_{uuid.uuid4().hex[:8]}", user_id=admin_id))
-            session.commit()
-        else:
-            if not admin_user.phone:
-                admin_user.phone = "+1 (555) 876-5432"
-                admin_user.status = "active"
+                # Attach role
+                session.add(UserRole(
+                    id=f"ur_{uuid.uuid4().hex[:8]}",
+                    user_id=new_uid,
+                    role_id=target_role_id
+                ))
+                # Attach settings
+                session.add(UserSetting(
+                    id=f"set_{uuid.uuid4().hex[:8]}",
+                    user_id=new_uid,
+                    email_alerts=True,
+                    weekly_digest=True,
+                    high_negative_spike_alert=True
+                ))
                 session.commit()
-
-        # Seed Demo User
-        std_user = session.query(User).filter_by(email="user@sentimentscope.com").first()
-        if not std_user:
-            std_id = "usr_demo_user"
-            new_std = User(
-                id=std_id,
-                email="user@sentimentscope.com",
-                name="Demo Analyst",
-                phone="+1 (555) 345-6789",
-                status="active",
-                password_hash=hash_password("UserPassword123!"),
-                avatar="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=256",
-                is_verified=True
-            )
-            session.add(new_std)
-            session.commit()
-            session.add(UserRole(id=f"ur_{uuid.uuid4().hex[:8]}", user_id=std_id, role_id=role_map["User"]))
-            session.add(UserSetting(id=f"set_{uuid.uuid4().hex[:8]}", user_id=std_id))
-            session.commit()
-        else:
-            if not std_user.phone:
-                std_user.phone = "+1 (555) 345-6789"
-                std_user.status = "active"
+                logger.info("Created demo account: %s (%s)", acc["email"], acc["role"])
+            else:
+                # Update role and status to ensure consistency with requirements
+                existing_user.name = acc["name"]
+                existing_user.status = "active"
+                if not existing_user.phone:
+                    existing_user.phone = acc["phone"]
+                existing_user.password_hash = hash_password(acc["password"])
+                
+                # Check UserRole assignment
+                existing_ur = session.query(UserRole).filter_by(user_id=existing_user.id).first()
+                if existing_ur:
+                    existing_ur.role_id = target_role_id
+                else:
+                    session.add(UserRole(
+                        id=f"ur_{uuid.uuid4().hex[:8]}",
+                        user_id=existing_user.id,
+                        role_id=target_role_id
+                    ))
                 session.commit()
+                logger.info("Updated demo account: %s -> %s", acc["email"], acc["role"])
 
 
     except Exception as e:

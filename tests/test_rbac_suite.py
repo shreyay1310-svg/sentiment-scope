@@ -27,17 +27,17 @@ import uuid
 class TestRBACSuite(unittest.TestCase):
     def setUp(self):
         # 1. Login as Super Admin (Shreya)
-        res_super = login(LoginRequest(email="shreya@sentimentscope.com", password="Password123!"))
+        res_super = login(LoginRequest(email="admin@sentimentscope.com", password="Password123!"))
         self.super_admin_token = res_super["token"]
         self.super_admin = res_super["user"]
 
-        # 2. Login as Admin (Alex)
-        res_admin = login(LoginRequest(email="admin@sentimentscope.com", password="AdminPassword123!"))
+        # 2. Login as Admin (Alex Vance)
+        res_admin = login(LoginRequest(email="alex@sentimentscope.com", password="AdminPassword123!"))
         self.admin_token = res_admin["token"]
         self.admin = res_admin["user"]
 
         # 3. Login as Standard User (Demo User)
-        res_user = login(LoginRequest(email="user@sentimentscope.com", password="UserPassword123!"))
+        res_user = login(LoginRequest(email="demo@sentimentscope.com", password="UserPassword123!"))
         self.user_token = res_user["token"]
         self.user = res_user["user"]
 

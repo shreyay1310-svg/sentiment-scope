@@ -38,11 +38,11 @@ class Settings:
         "http://127.0.0.1:5173",
         "http://localhost:8088",
         "http://127.0.0.1:8088",
-        "https://sentiment-scope-r8kl-shreyas-projects-182e8d54.vercel.app",
         "https://sentiment-scope-alpha.vercel.app",
-        "https://frontend-ecru-nine-35.vercel.app",
-        "https://frontend-ift5bnjzv-shreyas-projects-182e8d54.vercel.app",
-        "*"
+        "https://sentiment-scope-r8kl.vercel.app",
+        "https://sentiment-scope-r8kl-shreyas-projects-182e8d54.vercel.app",
+        "https://sentiment-scope-5uxu1vayo-shreyas-projects-182e8d54.vercel.app",
+        "https://backend-sentimentscope.vercel.app"
     ]
 
     @property

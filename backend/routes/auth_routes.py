@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 from typing import Optional
-from auth import hash_password, verify_password, create_access_token, get_current_user
+from auth import hash_password, verify_password, create_access_token, get_current_user, normalize_role
 from database import db
 import datetime
 import re
@@ -16,6 +16,9 @@ class RegisterRequest(BaseModel):
     name: str
     email: str
     password: str
+    phone: Optional[str] = ""
+    confirm_password: Optional[str] = None
+    terms: Optional[bool] = True
     role: Optional[str] = "User"
 
 class LoginRequest(BaseModel):
@@ -45,10 +48,20 @@ def register(req: RegisterRequest):
             detail="Password must be at least 6 characters long."
         )
 
-    assigned_role = req.role if req.role in ["User", "Admin", "Super Admin"] else "User"
+    if req.confirm_password and req.password != req.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Passwords do not match."
+        )
+
+    # Security requirement: Users must never be allowed to register themselves as Super Admin or Admin.
+    assigned_role = "User"
+    
     user_data = {
         "email": req.email,
         "name": req.name,
+        "phone": req.phone or "",
+        "status": "active",
         "password_hash": hash_password(req.password),
         "role": assigned_role,
         "avatar": f"https://api.dicebear.com/7.x/initials/svg?seed={req.name}",
@@ -56,8 +69,11 @@ def register(req: RegisterRequest):
         "created_at": datetime.datetime.now().isoformat()
     }
     created = db.create_user(user_data)
-    token = create_access_token({"sub": created["id"], "email": created["email"], "role": created["role"]})
+    norm = normalize_role(created["role"])
+    token = create_access_token({"sub": created["id"], "email": created["email"], "role": created["role"], "norm_role": norm})
     
+    db.log_activity(created["id"], "USER_REGISTER", f"New account registered: {created['email']}")
+
     return {
         "status": "success",
         "message": "Registration successful! Account activated.",
@@ -66,9 +82,13 @@ def register(req: RegisterRequest):
             "id": created["id"],
             "email": created["email"],
             "name": created["name"],
+            "full_name": created["name"],
+            "phone": created.get("phone", ""),
+            "status": "active",
             "role": created["role"],
+            "norm_role": norm,
             "avatar": created.get("avatar", ""),
-            "plan": "Pro Plan"
+            "plan": "Starter Plan"
         }
     }
 
@@ -81,7 +101,16 @@ def login(req: LoginRequest):
             detail="Invalid email or password credentials."
         )
 
-    token = create_access_token({"sub": user["id"], "email": user["email"], "role": user["role"]})
+    if user.get("status") in ["inactive", "suspended", "deactivated"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is deactivated or suspended. Please contact Super Admin."
+        )
+
+    norm = normalize_role(user["role"])
+    token = create_access_token({"sub": user["id"], "email": user["email"], "role": user["role"], "norm_role": norm})
+    db.log_activity(user["id"], "USER_LOGIN", f"User logged in from web client: {user['email']}")
+
     return {
         "status": "success",
         "token": token,
@@ -89,21 +118,36 @@ def login(req: LoginRequest):
             "id": user["id"],
             "email": user["email"],
             "name": user["name"],
+            "full_name": user["name"],
+            "phone": user.get("phone", ""),
+            "status": user.get("status", "active"),
             "role": user["role"],
+            "norm_role": norm,
             "avatar": user.get("avatar", ""),
-            "plan": "Pro Plan" if user["role"] in ["Super Admin", "Admin"] else "Starter Plan"
+            "plan": "Pro Plan" if norm in ["SUPER_ADMIN", "ADMIN"] else "Starter Plan"
         }
     }
 
+@router.post("/logout")
+def logout(current_user: dict = Depends(get_current_user)):
+    db.log_activity(current_user["id"], "USER_LOGOUT", f"User logged out: {current_user['email']}")
+    return {"status": "success", "message": "Logged out successfully."}
+
+
 @router.get("/me")
 def get_me(current_user: dict = Depends(get_current_user)):
+    norm = normalize_role(current_user.get("role"))
     return {
         "id": current_user["id"],
         "email": current_user["email"],
         "name": current_user["name"],
+        "full_name": current_user["name"],
+        "phone": current_user.get("phone", ""),
+        "status": current_user.get("status", "active"),
         "role": current_user["role"],
+        "norm_role": norm,
         "avatar": current_user.get("avatar", ""),
-        "plan": "Pro Plan" if current_user.get("role") in ["Super Admin", "Admin"] else "Starter Plan"
+        "plan": "Pro Plan" if norm in ["SUPER_ADMIN", "ADMIN"] else "Starter Plan"
     }
 
 @router.post("/forgot-password")

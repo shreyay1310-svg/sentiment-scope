@@ -1,7 +1,10 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
+  ShieldAlert,
+  Shield,
   FileText,
   UploadCloud,
   Radio,
@@ -9,23 +12,31 @@ import {
   Clock,
   Settings,
   Sparkles,
-  ArrowRight,
   Brain,
   X
 } from 'lucide-react';
 
-const navItems = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-  { name: 'Analyze Text', path: '/analyze-text', icon: FileText },
-  { name: 'Analyze Files', path: '/analyze-files', icon: UploadCloud },
-  { name: 'Real-time Monitoring', path: '/monitoring', icon: Radio },
-  { name: 'Reports', path: '/reports', icon: BarChart3 },
-  { name: 'History', path: '/history', icon: Clock },
-  { name: 'AI Insights', path: '/insights', icon: Brain },
-  { name: 'Settings', path: '/settings', icon: Settings },
-];
-
 export const Sidebar = ({ mobileOpen, setMobileOpen, onOpenLearnMore }) => {
+  const { user, normRole, isSuperAdmin, isAdmin } = useAuth();
+
+  // Dynamic navigation links based on user role
+  const navItems = [
+    ...(isSuperAdmin ? [
+      { name: 'Super Admin', path: '/super-admin/dashboard', icon: ShieldAlert, badge: 'Full' },
+    ] : []),
+    ...(isAdmin && !isSuperAdmin ? [
+      { name: 'Admin Dashboard', path: '/admin/dashboard', icon: Shield, badge: 'Dept' },
+    ] : []),
+    { name: isSuperAdmin || isAdmin ? 'Analyst View' : 'Dashboard', path: '/user/dashboard', icon: LayoutDashboard },
+    { name: 'Analyze Text', path: '/analyze-text', icon: FileText },
+    { name: 'Analyze Files', path: '/analyze-files', icon: UploadCloud },
+    { name: 'Real-time Monitoring', path: '/monitoring', icon: Radio },
+    { name: 'Reports', path: '/reports', icon: BarChart3 },
+    { name: 'History', path: '/history', icon: Clock },
+    { name: 'AI Insights', path: '/insights', icon: Brain },
+    { name: 'Settings', path: '/settings', icon: Settings },
+  ];
+
   return (
     <>
       {/* Mobile Backdrop */}
@@ -43,9 +54,9 @@ export const Sidebar = ({ mobileOpen, setMobileOpen, onOpenLearnMore }) => {
       >
         {/* Brand Header */}
         <div>
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#7C3AED] via-[#6366F1] to-[#4F46E5] flex items-center justify-center shadow-lg shadow-purple-500/30">
                 <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <path d="M4 12v1M8 8v9M12 4v16M16 9v7M20 11v3" />
                 </svg>
@@ -78,15 +89,22 @@ export const Sidebar = ({ mobileOpen, setMobileOpen, onOpenLearnMore }) => {
                   to={item.path}
                   onClick={() => setMobileOpen(false)}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                       isActive
                         ? 'bg-gradient-to-r from-[#702FD3] to-[#8B48F6] text-white shadow-lg shadow-purple-900/40 translate-x-1 font-semibold'
                         : 'text-purple-200/75 hover:text-white hover:bg-white/5'
                     }`
                   }
                 >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  <span>{item.name}</span>
+                  <div className="flex items-center gap-3">
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span>{item.name}</span>
+                  </div>
+                  {item.badge && (
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/20 text-white">
+                      {item.badge}
+                    </span>
+                  )}
                 </NavLink>
               );
             })}
@@ -94,36 +112,37 @@ export const Sidebar = ({ mobileOpen, setMobileOpen, onOpenLearnMore }) => {
         </div>
 
         {/* Bottom AI Robot Feature Card */}
-        <div className="mt-6">
+        <div className="mt-4">
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#251A52] to-[#1A123E] border border-purple-500/20 p-4 shadow-xl">
             {/* Robot Graphic */}
             <div className="flex items-center justify-center -mt-2 mb-2">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 via-purple-500 to-indigo-600 p-0.5 shadow-md shadow-purple-500/20 flex items-center justify-center">
-                <div className="w-full h-full rounded-full bg-[#1A123E] flex items-center justify-center relative">
-                  <div className="w-10 h-7 rounded-xl bg-cyan-400/20 border border-cyan-400/40 flex items-center justify-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
-                    <span className="w-2 h-2 rounded-full bg-cyan-300 animate-pulse"></span>
+              <div className="relative w-16 h-16 flex items-center justify-center">
+                <div className="w-14 h-12 bg-linear-to-b from-purple-200 to-indigo-100 rounded-2xl border-2 border-white/60 shadow-inner flex flex-col items-center justify-center relative">
+                  <div className="w-2.5 h-1.5 bg-purple-400 rounded-full mb-1"></div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-purple-900 animate-pulse"></div>
+                    <div className="w-2 h-2 rounded-full bg-purple-900 animate-pulse"></div>
                   </div>
-                  {/* Antennas */}
-                  <div className="absolute -top-1.5 w-1 h-2 bg-indigo-400 rounded-full"></div>
+                  <div className="w-4 h-1 bg-purple-800 rounded-full mt-1"></div>
                 </div>
               </div>
             </div>
 
-            <h4 className="text-sm font-bold text-white text-center">
-              AI Sentiment Engine
-            </h4>
-            <p className="text-[11px] text-purple-200/70 text-center mt-1 leading-relaxed">
-              Understand opinions, emotions and trends from your data.
-            </p>
-
-            <button
-              onClick={onOpenLearnMore}
-              className="mt-3 w-full py-2 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/30 transition-all hover:scale-[1.02]"
-            >
-              <span>Learn More</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            <div className="text-center">
+              <h4 className="text-xs font-bold text-white tracking-wide">
+                AI Sentiment Engine
+              </h4>
+              <p className="text-[10px] text-purple-200/70 mt-1 mb-3 leading-tight">
+                Understand opinions, emotions and trends from your data.
+              </p>
+              <button
+                onClick={onOpenLearnMore}
+                className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[11px] font-semibold flex items-center justify-center gap-1 shadow-md shadow-purple-900/40 transition-all cursor-pointer"
+              >
+                <span>Learn More</span>
+                <span className="text-xs">→</span>
+              </button>
+            </div>
           </div>
         </div>
       </aside>

@@ -164,15 +164,28 @@ export const Navbar = ({ setMobileOpen, onSearch }) => {
 
               <div className="py-1">
                 <button
+                  onClick={() => {
+                    setProfileOpen(false);
+                    const norm = (user?.norm_role || user?.role || '').toUpperCase();
+                    if (norm.includes('SUPER')) navigate('/super-admin/dashboard');
+                    else if (norm.includes('ADMIN')) navigate('/admin/dashboard');
+                    else navigate('/user/dashboard');
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-50 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>Open Role Dashboard</span>
+                </button>
+                <button
                   onClick={() => { setProfileOpen(false); navigate('/settings'); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-purple-50 hover:text-purple-700 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-purple-50 hover:text-purple-700 rounded-lg transition-colors cursor-pointer"
                 >
                   <User className="w-3.5 h-3.5" />
                   <span>Account & Profile</span>
                 </button>
                 <button
                   onClick={() => { setProfileOpen(false); navigate('/settings'); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-purple-50 hover:text-purple-700 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-purple-50 hover:text-purple-700 rounded-lg transition-colors cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Subscription Plan</span>

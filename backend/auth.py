@@ -34,6 +34,22 @@ def decode_access_token(token: str) -> Optional[dict]:
     except Exception:
         return None
 
+def normalize_role(role: Optional[str]) -> str:
+    r = (role or "").strip().upper().replace(" ", "_")
+    if r in ["SUPER_ADMIN", "SUPERADMIN"]:
+        return "SUPER_ADMIN"
+    if r in ["ADMIN"]:
+        return "ADMIN"
+    return "USER"
+
+def display_role(role: Optional[str]) -> str:
+    norm = normalize_role(role)
+    if norm == "SUPER_ADMIN":
+        return "Super Admin"
+    if norm == "ADMIN":
+        return "Admin"
+    return "Standard User"
+
 def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Dict[str, Any]:
     from database import db
     if not credentials:
@@ -58,11 +74,17 @@ def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depen
             detail="User account not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if user.get("status") in ["inactive", "suspended", "deactivated"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been deactivated or suspended. Please contact Super Admin."
+        )
+    user["norm_role"] = normalize_role(user.get("role"))
     return user
 
 def require_admin(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
-    role = current_user.get("role", "User")
-    if role not in ["Admin", "Super Admin"]:
+    norm_role = current_user.get("norm_role") or normalize_role(current_user.get("role"))
+    if norm_role not in ["ADMIN", "SUPER_ADMIN"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin privileges required for this operation"
@@ -70,10 +92,12 @@ def require_admin(current_user: Dict[str, Any] = Depends(get_current_user)) -> D
     return current_user
 
 def require_super_admin(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
-    if current_user.get("role") != "Super Admin":
+    norm_role = current_user.get("norm_role") or normalize_role(current_user.get("role"))
+    if norm_role != "SUPER_ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Super Admin privileges required for this operation"
         )
     return current_user
+
 

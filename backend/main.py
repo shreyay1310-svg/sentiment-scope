@@ -13,6 +13,7 @@ from routes.history_routes import router as history_router
 from routes.monitoring_routes import router as monitoring_router
 from routes.reports_routes import router as reports_router
 from routes.settings_routes import router as settings_router
+from routes.role_routes import router as role_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -63,6 +64,7 @@ app.include_router(history_router, prefix=settings.API_PREFIX)
 app.include_router(monitoring_router, prefix=settings.API_PREFIX)
 app.include_router(reports_router, prefix=settings.API_PREFIX)
 app.include_router(settings_router, prefix=settings.API_PREFIX)
+app.include_router(role_router, prefix=settings.API_PREFIX)
 
 @app.get("/")
 def root(request: Request):
@@ -96,16 +98,10 @@ if not settings.is_serverless:
 
         _spa_html = (DIST_DIR / "index.html").read_text(encoding="utf-8")
 
-        @app.get("/login", response_class=HTMLResponse)
-        @app.get("/register", response_class=HTMLResponse)
-        @app.get("/dashboard", response_class=HTMLResponse)
-        @app.get("/analyze", response_class=HTMLResponse)
-        @app.get("/files", response_class=HTMLResponse)
-        @app.get("/monitoring", response_class=HTMLResponse)
-        @app.get("/reports", response_class=HTMLResponse)
-        @app.get("/history", response_class=HTMLResponse)
-        @app.get("/settings", response_class=HTMLResponse)
-        def serve_spa():
+        @app.get("/{full_path:path}", response_class=HTMLResponse)
+        def serve_spa(full_path: str):
+            if full_path.startswith("api/") or full_path.startswith("assets/"):
+                raise HTTPException(status_code=404, detail="Not Found")
             return _spa_html
 
 

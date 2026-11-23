@@ -22,9 +22,15 @@ class Settings:
     DB_SSL: bool = os.getenv("DB_SSL", "false").lower() in ["true", "1", "yes"]
 
     # Storage paths
-    STORAGE_DIR: Path = BASE_DIR / "data"
-    UPLOADS_DIR: Path = BASE_DIR / "uploads"
-    REPORTS_DIR: Path = BASE_DIR / "reports"
+    is_serverless: bool = os.getenv("VERCEL") == "1" or os.getenv("AWS_LAMBDA_FUNCTION_NAME") is not None
+    if is_serverless:
+        STORAGE_DIR: Path = Path("/tmp/data")
+        UPLOADS_DIR: Path = Path("/tmp/uploads")
+        REPORTS_DIR: Path = Path("/tmp/reports")
+    else:
+        STORAGE_DIR: Path = BASE_DIR / "data"
+        UPLOADS_DIR: Path = BASE_DIR / "uploads"
+        REPORTS_DIR: Path = BASE_DIR / "reports"
     
     # CORS
     CORS_ORIGINS: list = [
@@ -32,6 +38,8 @@ class Settings:
         "http://127.0.0.1:5173",
         "http://localhost:8088",
         "http://127.0.0.1:8088",
+        "https://sentiment-scope-r8kl-shreyas-projects-182e8d54.vercel.app",
+        "https://sentiment-scope-alpha.vercel.app",
         "https://frontend-ecru-nine-35.vercel.app",
         "https://frontend-ift5bnjzv-shreyas-projects-182e8d54.vercel.app",
         "*"
@@ -44,6 +52,10 @@ class Settings:
         return f"mysql+pymysql://{self.DB_USER}{pwd_part}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?charset=utf8mb4"
 
 settings = Settings()
-settings.STORAGE_DIR.mkdir(parents=True, exist_ok=True)
-settings.UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-settings.REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+try:
+    settings.STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+    settings.UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+    settings.REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+except OSError:
+    pass
+
